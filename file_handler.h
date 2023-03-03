@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <sys/stat.h>
 
 enum {
     MAX_PATH_BUF_SIZE = 4096,
@@ -9,11 +10,11 @@ enum {
 size_t current_entry_count;
 char entry_names[MAX_ENTRY_COUNT][MAX_FILENAME_LENGTH];
 
-void error_exit(const char *msg);
-
 void init_path(const char *path);
 
-struct stat get_file_stat(const char *file_name);
+int get_file_stat(const char *file_path, struct stat *current_stat);
+
+int get_current_file_stat(struct stat *current_stat);
 
 void normalize_path();
 
@@ -28,3 +29,9 @@ void load_dir_entry(int show_hidden_files);
 int open_file_or_directory(int file_position);
 
 int delete_file(int file_position);
+
+int copy_file(const char *file_name);
+
+int cut_file(const char *file_name);
+
+int paste_file_from_clipboard();

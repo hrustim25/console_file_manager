@@ -26,4 +26,7 @@ from build directory. path - optional field of address to start manager in. If p
 | enter | Go into directory |
 | d | Delete file |
 | h | Hide/show hidden files |
-| q | Quit |
+| c | Copy file |
+| x | Cut file |
+| v | Paste file |
+| q | Quit manager |

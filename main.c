@@ -25,22 +25,6 @@ int right_entry_pos_bound;
 
 int is_showing_hidden_files = 0;
 
-void error_exit(const char *msg) {
-    printf("%s\n", msg);
-    endwin();
-    exit(1);
-}
-
-void clear_screen() {
-    attrset(COLOR_PAIR(0));
-    for (int i = 0; i < window_height; ++i) {
-        for (int j = 0; j < window_width; ++j) {
-            mvaddch(i, j, ' ');
-        }
-    }
-    attroff(COLOR_PAIR(0));
-}
-
 int get_file_attribute(int file_position, struct stat file_stat) {
     int result = 0;
     if (strcmp(entry_names[file_position], "..") == 0) {
@@ -75,7 +59,12 @@ void display_content() {
             continue;
         }
 
-        struct stat file_stat = get_file_stat(entry_names[i]);
+        add_file_to_path(entry_names[i]);
+        struct stat file_stat;
+        if (get_current_file_stat(&file_stat)) {
+            return;
+        }
+        remove_last_file_from_path();
         int file_attribute = get_file_attribute(i, file_stat);
 
         attrset(file_attribute);
@@ -85,7 +74,12 @@ void display_content() {
             char result_string[window_width + 1];
             memset(result_string, ' ', window_width);
             result_string[window_width] = '\0';
-            strncpy(result_string, entry_names[i], strlen(entry_names[i]));
+            int file_name_print_bound =
+                window_width - MODIFY_TIME_DISPLAY_SHIFT - 1;
+            if (strlen(entry_names[i]) < file_name_print_bound) {
+                file_name_print_bound = strlen(entry_names[i]);
+            }
+            strncpy(result_string, entry_names[i], file_name_print_bound);
             strftime(result_string + window_width - MODIFY_TIME_DISPLAY_SHIFT,
                      MODIFY_TIME_DISPLAY_SHIFT, "%H:%M:%S %d-%m-%Y",
                      localtime(&file_stat.st_mtime));
@@ -103,9 +97,7 @@ void init_ncurses() {
     keypad(stdscr, TRUE);
     curs_set(0);
     noecho();
-    if (start_color() != OK) {
-        error_exit("Colors could not start");
-    }
+    start_color();
 
     init_pair(REG_FILE_COLOR_PAIR, COLOR_WHITE, COLOR_BLACK);
     init_pair(DIR_COLOR_PAIR, COLOR_BLUE, COLOR_BLACK);
@@ -173,6 +165,15 @@ void handle_keypress(int ch) {
             --cursor_position;
         }
         break;
+    case 'c':
+        status = copy_file(entry_names[cursor_position]);
+        break;
+    case 'x':
+        status = cut_file(entry_names[cursor_position]);
+        break;
+    case 'v':
+        status = paste_file_from_clipboard();
+        break;
     }
 }
 
@@ -193,7 +194,7 @@ int main(int argc, char *argv[]) {
     init_parameters();
 
     while (1) {
-        clear_screen();
+        erase();
         load_dir_entry(is_showing_hidden_files);
         display_content();
         refresh();
